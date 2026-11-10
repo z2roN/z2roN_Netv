@@ -1,0 +1,52 @@
+# ==============================================================================
+#  z2roN_Net (네트워크 정보 보기, Android) 자동 빌드
+# ==============================================================================
+#  1) 이 프로젝트 전체(.github 폴더 포함)를 GitHub 저장소에 올립니다.
+#  2) Actions > "z2roN_Net 빌드" > Run workflow  (main 에 올리면 자동 실행)
+#  3) 몇 분 뒤 실행 맨 아래 Artifacts 의 z2roN_Net-android-v버전 을 내려받아 압축을 풀고
+#     z2roN_Net.apk 를 휴대폰에 설치합니다. (알 수 없는 앱 설치 허용 필요)
+#  동작: flutter create 로 안드로이드 뼈대를 만든 뒤, 이 저장소의 pubspec.yaml / lib /
+#        android_patch(MainActivity.kt, 아이콘) 를 덮어써서 빌드합니다. 플러그인은 쓰지 않습니다.
+#  실패하면 빨간 X 단계의 마지막 로그를 복사해서 알려주세요.
+# ==============================================================================
+name: z2roN_Net 빌드
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: 안드로이드 뼈대 만들기
+        run: flutter create --org com.z2ron --project-name z2ron_net --platforms=android app_tmp
+      - name: 소스 덮어쓰기 + 안드로이드 설정
+        run: |
+          cp pubspec.yaml app_tmp/pubspec.yaml
+          rm -rf app_tmp/lib app_tmp/test
+          cp -r lib app_tmp/lib
+          python3 tools/patch_android.py app_tmp
+      - name: APK 빌드
+        working-directory: app_tmp
+        run: |
+          flutter pub get
+          flutter build apk --release
+      - name: 버전 읽기
+        id: ver
+        run: echo "v=$(grep -oP '(?<=^version: )[0-9.]+' pubspec.yaml)" >> "$GITHUB_OUTPUT"
+      - name: APK 이름 정리
+        run: cp app_tmp/build/app/outputs/flutter-apk/app-release.apk z2roN_Net.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: z2roN_Net-android-v${{ steps.ver.outputs.v }}
+          path: z2roN_Net.apk
