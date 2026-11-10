@@ -1,0 +1,14 @@
+name: z2ron_net
+description: z2roN Net - 네트워크 정보 보기
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
